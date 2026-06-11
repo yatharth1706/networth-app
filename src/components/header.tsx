@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   Eye,
   EyeOff,
+  FileUp,
   LayoutDashboard,
   ReceiptIndianRupee,
   Settings,
@@ -22,6 +23,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/expenses", label: "Expenses", icon: ReceiptIndianRupee },
   { href: "/close", label: "Monthly close", icon: CalendarCheck },
+  { href: "/import", label: "Import", icon: FileUp },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
