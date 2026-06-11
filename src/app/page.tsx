@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Landmark, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
 import { getStorage } from "@/lib/storage";
-import { computeNetWorth } from "@/lib/networth";
+import { computeNetWorth, netWorthSeries } from "@/lib/networth";
 import { formatCurrency } from "@/lib/config";
-import { ACCOUNT_TYPE_META, type Account } from "@/lib/types";
+import { ACCOUNT_TYPE_META, type Account, type Snapshot } from "@/lib/types";
 import { CountUp } from "@/components/count-up";
 import { AddAccountForm } from "@/components/add-account-form";
+import { NetWorthChart } from "@/components/networth-chart";
 import {
   Card,
   CardContent,
@@ -18,9 +20,12 @@ import {
 
 export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   const reload = useCallback(() => {
-    void getStorage().getAccounts().then(setAccounts);
+    const storage = getStorage();
+    void storage.getAccounts().then(setAccounts);
+    void storage.getSnapshots().then(setSnapshots);
   }, []);
 
   useEffect(() => {
@@ -32,6 +37,7 @@ export default function Dashboard() {
   }
 
   const { assets, liabilities, netWorth } = computeNetWorth(accounts);
+  const series = netWorthSeries(accounts, snapshots);
   const assetAccounts = accounts.filter((a) => a.kind === "asset");
   const liabilityAccounts = accounts.filter((a) => a.kind === "liability");
 
@@ -64,6 +70,29 @@ export default function Dashboard() {
           </span>
         </CardContent>
       </Card>
+
+      {series.length >= 2 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Net worth over time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NetWorthChart data={series} />
+          </CardContent>
+        </Card>
+      ) : (
+        accounts.length > 0 && (
+          <Card>
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              Your net worth chart appears after two{" "}
+              <Link href="/close" className="font-medium text-primary underline-offset-2 hover:underline">
+                monthly closes
+              </Link>
+              . Do your first one now — it takes a minute.
+            </CardContent>
+          </Card>
+        )
+      )}
 
       {accounts.length === 0 && (
         <Card>
