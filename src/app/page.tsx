@@ -2,14 +2,27 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Landmark, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  CalendarCheck,
+  Landmark,
+  LineChart,
+  PiggyBank,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { getStorage } from "@/lib/storage";
-import { computeNetWorth, netWorthSeries } from "@/lib/networth";
+import {
+  assetAllocation,
+  computeNetWorth,
+  netWorthSeries,
+} from "@/lib/networth";
 import { formatCurrency } from "@/lib/config";
 import { ACCOUNT_TYPE_META, type Account, type Snapshot } from "@/lib/types";
 import { CountUp } from "@/components/count-up";
 import { AddAccountForm } from "@/components/add-account-form";
 import { NetWorthChart } from "@/components/networth-chart";
+import { AllocationDonut } from "@/components/allocation-donut";
+import { EditAccountDialog } from "@/components/edit-account-dialog";
 import {
   Card,
   CardContent,
@@ -38,6 +51,7 @@ export default function Dashboard() {
 
   const { assets, liabilities, netWorth } = computeNetWorth(accounts);
   const series = netWorthSeries(accounts, snapshots);
+  const allocation = assetAllocation(accounts);
   const assetAccounts = accounts.filter((a) => a.kind === "asset");
   const liabilityAccounts = accounts.filter((a) => a.kind === "liability");
 
@@ -94,17 +108,44 @@ export default function Dashboard() {
         )
       )}
 
+      {allocation.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Asset allocation</CardTitle>
+            <CardDescription>How your assets are split across classes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AllocationDonut data={allocation} />
+          </CardContent>
+        </Card>
+      )}
+
       {accounts.length === 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PiggyBank className="h-5 w-5" /> Welcome! Add your first account
-            </CardTitle>
+            <CardTitle>Welcome 👋</CardTitle>
             <CardDescription>
-              Add anything that holds value — bank accounts, mutual funds, PPF,
-              gold, or loans. Everything stays on this device.
+              Three steps to your net worth — no signup, everything stays on
+              this device.
             </CardDescription>
           </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <OnboardingStep
+              icon={<PiggyBank className="h-5 w-5" />}
+              step="1. Add accounts"
+              text="Everything that holds value: savings, mutual funds, PPF, EPF, gold — and loans too."
+            />
+            <OnboardingStep
+              icon={<CalendarCheck className="h-5 w-5" />}
+              step="2. Close each month"
+              text="Once a month, update each account's value. Takes about a minute."
+            />
+            <OnboardingStep
+              icon={<LineChart className="h-5 w-5" />}
+              step="3. Watch it grow"
+              text="Charts for net worth, allocation, and where your salary goes."
+            />
+          </CardContent>
         </Card>
       )}
 
@@ -123,14 +164,36 @@ export default function Dashboard() {
             title="Assets"
             icon={<TrendingUp className="h-4 w-4 text-positive" />}
             accounts={assetAccounts}
+            onChanged={reload}
           />
           <AccountList
             title="Liabilities"
             icon={<TrendingDown className="h-4 w-4 text-negative" />}
             accounts={liabilityAccounts}
+            onChanged={reload}
           />
         </div>
       )}
+    </div>
+  );
+}
+
+function OnboardingStep({
+  icon,
+  step,
+  text,
+}: {
+  icon: React.ReactNode;
+  step: string;
+  text: string;
+}) {
+  return (
+    <div className="grid content-start gap-2 rounded-lg border border-border p-4">
+      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-primary">
+        {icon}
+      </span>
+      <span className="text-sm font-medium">{step}</span>
+      <span className="text-xs text-muted-foreground">{text}</span>
     </div>
   );
 }
@@ -139,10 +202,12 @@ function AccountList({
   title,
   icon,
   accounts,
+  onChanged,
 }: {
   title: string;
   icon: React.ReactNode;
   accounts: Account[];
+  onChanged: () => void;
 }) {
   return (
     <Card>
@@ -175,8 +240,11 @@ function AccountList({
                     </span>
                   </span>
                 </span>
-                <span className="text-sm font-medium" data-amount>
-                  {formatCurrency(account.currentValue)}
+                <span className="flex items-center gap-1">
+                  <span className="text-sm font-medium" data-amount>
+                    {formatCurrency(account.currentValue)}
+                  </span>
+                  <EditAccountDialog account={account} onChanged={onChanged} />
                 </span>
               </li>
             ))}
