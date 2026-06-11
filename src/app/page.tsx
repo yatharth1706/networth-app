@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck,
+  Flag,
   Landmark,
   LineChart,
   PiggyBank,
@@ -19,8 +20,14 @@ import {
   netWorthSeries,
 } from "@/lib/networth";
 import { formatCurrency } from "@/lib/config";
-import { ACCOUNT_TYPE_META, type Account, type Snapshot } from "@/lib/types";
+import {
+  ACCOUNT_TYPE_META,
+  type Account,
+  type Snapshot,
+  type Transaction,
+} from "@/lib/types";
 import { refreshAllNavs } from "@/lib/prices";
+import { latestMonthDelta, nextMilestone } from "@/lib/insights";
 import { CountUp } from "@/components/count-up";
 import { AddAccountForm } from "@/components/add-account-form";
 import { NetWorthChart } from "@/components/networth-chart";
@@ -39,6 +46,7 @@ import {
 export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
 
@@ -46,6 +54,7 @@ export default function Dashboard() {
     const storage = getStorage();
     void storage.getAccounts().then(setAccounts);
     void storage.getSnapshots().then(setSnapshots);
+    void storage.getTransactions().then(setTransactions);
   }, []);
 
   useEffect(() => {
@@ -62,6 +71,8 @@ export default function Dashboard() {
   const hasMarketAccounts = accounts.some(
     (a) => a.type === "mutual_fund" || a.type === "stocks",
   );
+  const monthDelta = latestMonthDelta(series, transactions);
+  const milestone = nextMilestone(netWorth, series);
 
   async function handleRefreshNavs() {
     setRefreshing(true);
@@ -97,21 +108,44 @@ export default function Dashboard() {
             />
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          <span className="flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4 text-positive" />
-            Assets{" "}
-            <span className="font-medium" data-amount>
-              {formatCurrency(assets)}
+        <CardContent className="grid gap-2 text-sm">
+          {monthDelta && (
+            <p data-amount>
+              <span
+                className={
+                  monthDelta.delta >= 0
+                    ? "font-semibold text-positive"
+                    : "font-semibold text-negative"
+                }
+              >
+                {signed(monthDelta.delta)}
+              </span>{" "}
+              this month
+              {monthDelta.saved != null && monthDelta.market != null && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {signed(monthDelta.saved)} saved · {signed(monthDelta.market)}{" "}
+                  market &amp; interest
+                </span>
+              )}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-x-8 gap-y-2">
+            <span className="flex items-center gap-1.5">
+              <TrendingUp className="h-4 w-4 text-positive" />
+              Assets{" "}
+              <span className="font-medium" data-amount>
+                {formatCurrency(assets)}
+              </span>
             </span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <TrendingDown className="h-4 w-4 text-negative" />
-            Liabilities{" "}
-            <span className="font-medium" data-amount>
-              {formatCurrency(liabilities)}
+            <span className="flex items-center gap-1.5">
+              <TrendingDown className="h-4 w-4 text-negative" />
+              Liabilities{" "}
+              <span className="font-medium" data-amount>
+                {formatCurrency(liabilities)}
+              </span>
             </span>
-          </span>
+          </div>
         </CardContent>
       </Card>
 
@@ -136,6 +170,39 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )
+      )}
+
+      {milestone && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5 text-primary" /> Next milestone:{" "}
+              <span data-amount>{formatCurrency(milestone.target, true)}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${(milestone.progress * 100).toFixed(1)}%` }}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground" data-amount>
+              {(milestone.progress * 100).toFixed(0)}% there ·{" "}
+              {formatCurrency(milestone.target - netWorth)} to go
+              {milestone.etaMonth && milestone.monthlyPace && (
+                <>
+                  {" "}
+                  · at your recent pace ({signed(Math.round(milestone.monthlyPace))}
+                  /month) you&apos;ll reach it around{" "}
+                  <span className="font-medium text-foreground">
+                    {formatEtaMonth(milestone.etaMonth)}
+                  </span>
+                </>
+              )}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {allocation.length > 0 && (
@@ -220,6 +287,18 @@ export default function Dashboard() {
       )}
     </div>
   );
+}
+
+function signed(value: number): string {
+  return `${value >= 0 ? "+" : "−"}${formatCurrency(Math.abs(value))}`;
+}
+
+function formatEtaMonth(month: string): string {
+  const [year, m] = month.split("-").map(Number);
+  return new Date(year, m - 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function OnboardingStep({

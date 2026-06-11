@@ -105,7 +105,11 @@ export default function Expenses() {
         <SummaryCard label="Income" value={income} tone="positive" />
         <SummaryCard label="Expenses" value={expenses} tone="negative" />
         <SummaryCard
-          label="Saved"
+          label={
+            income > 0
+              ? `Saved (${(((income - expenses) / income) * 100).toFixed(0)}% of income)`
+              : "Saved"
+          }
           value={income - expenses}
           tone={income - expenses >= 0 ? "positive" : "negative"}
         />

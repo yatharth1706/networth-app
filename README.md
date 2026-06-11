@@ -50,8 +50,9 @@ Key design decisions:
 - **Phase 2 — Smart accounts & automation (in progress):** rule-based
   PPF/FD/RD/EPF accrual (done), CAS PDF import (parsed client-side), live
   AMFI NAVs / stock prices, bank statement CSV import, loan amortization.
-- **Phase 3 — Insights:** net worth delta decomposition (saved vs market
-  movement), XIRR, allocation targets + drift alerts, goals, milestones.
+- **Phase 3 — Insights (in progress):** net worth delta decomposition — saved
+  vs market movement (done), milestone tracking with pace projection (done),
+  savings rate (done), XIRR, allocation targets + drift alerts, goals.
 - **Phase 4 — Cloud tier (later):** auth + sync via a `CloudAdapter`,
   server-side NAV refresh, multi-device.
 
