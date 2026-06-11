@@ -7,6 +7,7 @@ import {
   Landmark,
   LineChart,
   PiggyBank,
+  RefreshCw,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -19,11 +20,14 @@ import {
 } from "@/lib/networth";
 import { formatCurrency } from "@/lib/config";
 import { ACCOUNT_TYPE_META, type Account, type Snapshot } from "@/lib/types";
+import { refreshAllNavs } from "@/lib/prices";
 import { CountUp } from "@/components/count-up";
 import { AddAccountForm } from "@/components/add-account-form";
 import { NetWorthChart } from "@/components/networth-chart";
 import { AllocationDonut } from "@/components/allocation-donut";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
+import { HoldingsDialog } from "@/components/holdings-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -35,6 +39,8 @@ import {
 export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     const storage = getStorage();
@@ -53,6 +59,29 @@ export default function Dashboard() {
   const { assets, liabilities, netWorth } = computeNetWorth(accounts);
   const series = netWorthSeries(accounts, snapshots);
   const allocation = assetAllocation(accounts);
+  const hasMarketAccounts = accounts.some(
+    (a) => a.type === "mutual_fund" || a.type === "stocks",
+  );
+
+  async function handleRefreshNavs() {
+    setRefreshing(true);
+    setRefreshNote(null);
+    try {
+      const result = await refreshAllNavs(getStorage());
+      setRefreshNote(
+        result.updated === 0 && result.failed === 0
+          ? "No fund holdings with scheme codes yet — add some via the briefcase icon."
+          : `Updated ${result.updated} NAV${result.updated === 1 ? "" : "s"}` +
+              (result.failed > 0 ? `, ${result.failed} failed` : "") +
+              ".",
+      );
+      reload();
+    } catch {
+      setRefreshNote("NAV refresh failed — check your internet connection.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
   const assetAccounts = accounts.filter((a) => a.kind === "asset");
   const liabilityAccounts = accounts.filter((a) => a.kind === "liability");
 
@@ -159,6 +188,20 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {hasMarketAccounts && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" size="sm" onClick={handleRefreshNavs} disabled={refreshing}>
+            <RefreshCw className={refreshing ? "animate-spin" : undefined} />
+            {refreshing ? "Refreshing…" : "Refresh fund NAVs"}
+          </Button>
+          {refreshNote && (
+            <span className="text-xs text-muted-foreground" role="status">
+              {refreshNote}
+            </span>
+          )}
+        </div>
+      )}
+
       {accounts.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2">
           <AccountList
@@ -256,6 +299,9 @@ function AccountList({
                     )}
                     {formatCurrency(effectiveValue(account))}
                   </span>
+                  {(account.type === "mutual_fund" || account.type === "stocks") && (
+                    <HoldingsDialog account={account} onChanged={onChanged} />
+                  )}
                   <EditAccountDialog account={account} onChanged={onChanged} />
                 </span>
               </li>
