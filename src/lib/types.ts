@@ -1,0 +1,132 @@
+/**
+ * Core domain model. Every entity carries a string `id` (UUID) so records can
+ * move between storage backends (IndexedDB today, cloud later) without
+ * re-keying.
+ */
+
+export type AccountKind = "asset" | "liability";
+
+export type AccountType =
+  // Assets
+  | "savings"
+  | "cash"
+  | "mutual_fund"
+  | "stocks"
+  | "ppf"
+  | "epf"
+  | "nps"
+  | "fd"
+  | "rd"
+  | "gold"
+  | "real_estate"
+  | "crypto"
+  | "other_asset"
+  // Liabilities
+  | "credit_card"
+  | "home_loan"
+  | "personal_loan"
+  | "car_loan"
+  | "education_loan"
+  | "other_liability";
+
+export const ACCOUNT_TYPE_META: Record<
+  AccountType,
+  { label: string; kind: AccountKind }
+> = {
+  savings: { label: "Savings Account", kind: "asset" },
+  cash: { label: "Cash", kind: "asset" },
+  mutual_fund: { label: "Mutual Funds", kind: "asset" },
+  stocks: { label: "Stocks", kind: "asset" },
+  ppf: { label: "PPF", kind: "asset" },
+  epf: { label: "EPF", kind: "asset" },
+  nps: { label: "NPS", kind: "asset" },
+  fd: { label: "Fixed Deposit", kind: "asset" },
+  rd: { label: "Recurring Deposit", kind: "asset" },
+  gold: { label: "Gold", kind: "asset" },
+  real_estate: { label: "Real Estate", kind: "asset" },
+  crypto: { label: "Crypto", kind: "asset" },
+  other_asset: { label: "Other Asset", kind: "asset" },
+  credit_card: { label: "Credit Card", kind: "liability" },
+  home_loan: { label: "Home Loan", kind: "liability" },
+  personal_loan: { label: "Personal Loan", kind: "liability" },
+  car_loan: { label: "Car Loan", kind: "liability" },
+  education_loan: { label: "Education Loan", kind: "liability" },
+  other_liability: { label: "Other Liability", kind: "liability" },
+};
+
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  /** Denormalized from type for fast asset/liability queries. */
+  kind: AccountKind;
+  /** Latest known value in INR. Liabilities store the outstanding amount as a positive number. */
+  currentValue: number;
+  institution?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Soft delete — archived accounts keep their snapshot history. */
+  archivedAt?: string;
+}
+
+/** A position inside an account, e.g. units of a fund or shares of a stock. */
+export interface Holding {
+  id: string;
+  accountId: string;
+  name: string;
+  /** ISIN, ticker or folio number. */
+  identifier?: string;
+  units: number;
+  avgCostPerUnit?: number;
+  lastPrice?: number;
+  lastPriceAt?: string;
+}
+
+/**
+ * The value of one account on one date. Snapshots are the source of truth for
+ * all "over time" charts; they are written by the monthly close flow.
+ */
+export interface Snapshot {
+  id: string;
+  accountId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  value: number;
+}
+
+export type TransactionType = "income" | "expense" | "investment" | "transfer";
+
+export interface Transaction {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** Always positive; direction is given by type. */
+  amount: number;
+  type: TransactionType;
+  categoryId?: string;
+  accountId?: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  type: "income" | "expense";
+  color?: string;
+}
+
+/** Shape of the Export/Import JSON backup file. */
+export interface ExportData {
+  app: string;
+  schemaVersion: number;
+  exportedAt: string;
+  accounts: Account[];
+  holdings: Holding[];
+  snapshots: Snapshot[];
+  transactions: Transaction[];
+  categories: Category[];
+}
+
+export const SCHEMA_VERSION = 1;
