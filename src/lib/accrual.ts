@@ -22,12 +22,16 @@ export function effectiveValue(account: Account, asOf: Date = new Date()): numbe
 
   const monthlyRate = (rules.annualRatePct ?? 0) / 100 / 12;
   const every = rules.contributionEveryMonths ?? 1;
+  // For liabilities the schedule is an EMI: interest accrues on the
+  // outstanding balance, payments reduce it, and it never goes below zero.
+  const direction = account.kind === "liability" ? -1 : 1;
   let value = account.currentValue;
   for (let month = 1; month <= monthsElapsed; month++) {
     value *= 1 + monthlyRate;
     if (rules.contributionAmount && month % every === 0) {
-      value += rules.contributionAmount;
+      value += direction * rules.contributionAmount;
     }
+    if (value <= 0) return 0;
   }
   return Math.round(value);
 }

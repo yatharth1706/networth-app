@@ -55,9 +55,7 @@ export function EditAccountDialog({
     setRules(draftFromRules(account.rules));
   }
 
-  const showRules =
-    ACCOUNT_TYPE_META[type].kind === "asset" &&
-    (RULE_TYPES.includes(type) || account.rules != null);
+  const showRules = RULE_TYPES.includes(type) || account.rules != null;
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

@@ -1,12 +1,22 @@
 "use client";
 
-import type { AccountRules, AccountType } from "@/lib/types";
+import { ACCOUNT_TYPE_META, type AccountRules, type AccountType } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
-/** Account types where auto-growth rules are offered by default. */
-export const RULE_TYPES: AccountType[] = ["ppf", "epf", "nps", "fd", "rd"];
+/** Account types where auto-growth/amortization rules are offered by default. */
+export const RULE_TYPES: AccountType[] = [
+  "ppf",
+  "epf",
+  "nps",
+  "fd",
+  "rd",
+  "home_loan",
+  "car_loan",
+  "personal_loan",
+  "education_loan",
+];
 
 const SUGGESTED_RATE: Partial<Record<AccountType, string>> = {
   ppf: "7.1",
@@ -14,6 +24,10 @@ const SUGGESTED_RATE: Partial<Record<AccountType, string>> = {
   nps: "10",
   fd: "7",
   rd: "7",
+  home_loan: "8.5",
+  car_loan: "9.5",
+  personal_loan: "12",
+  education_loan: "10",
 };
 
 export interface RulesDraft {
@@ -58,10 +72,13 @@ export function RulesFields({
   onChange: (draft: RulesDraft) => void;
   idPrefix: string;
 }) {
+  const isLiability = ACCOUNT_TYPE_META[type].kind === "liability";
   return (
     <fieldset className="grid gap-3 rounded-lg border border-border p-3">
       <legend className="px-1 text-xs font-medium text-muted-foreground">
-        Auto-growth (optional) — value is projected forward between monthly closes
+        {isLiability
+          ? "Amortization (optional) — outstanding balance is projected forward between monthly closes"
+          : "Auto-growth (optional) — value is projected forward between monthly closes"}
       </legend>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="grid gap-1.5">
@@ -77,19 +94,23 @@ export function RulesFields({
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor={`${idPrefix}-contribution`}>Deposit (₹)</Label>
+          <Label htmlFor={`${idPrefix}-contribution`}>
+            {isLiability ? "EMI (₹)" : "Deposit (₹)"}
+          </Label>
           <Input
             id={`${idPrefix}-contribution`}
             type="number"
             min="0"
             step="any"
-            placeholder="e.g. 5000"
+            placeholder={isLiability ? "e.g. 25000" : "e.g. 5000"}
             value={draft.contribution}
             onChange={(e) => onChange({ ...draft, contribution: e.target.value })}
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor={`${idPrefix}-every`}>Deposit frequency</Label>
+          <Label htmlFor={`${idPrefix}-every`}>
+            {isLiability ? "Payment frequency" : "Deposit frequency"}
+          </Label>
           <Select
             id={`${idPrefix}-every`}
             value={draft.every}
