@@ -61,35 +61,39 @@ export interface Milestone {
   etaMonth: string | null;
 }
 
+/** Average month-over-month net worth change across up to the last 6 intervals. */
+export function recentMonthlyPace(series: NetWorthPoint[]): number | null {
+  if (series.length < 2) return null;
+  const recent = series.slice(-7);
+  const pace =
+    (recent[recent.length - 1].netWorth - recent[0].netWorth) /
+    (recent.length - 1);
+  return pace > 0 ? pace : null;
+}
+
+/** Estimated YYYY-MM a target amount is reached at the given pace. */
+export function etaMonthFor(
+  remaining: number,
+  monthlyPace: number | null,
+): string | null {
+  if (!monthlyPace || remaining <= 0) return null;
+  const monthsLeft = Math.ceil(remaining / monthlyPace);
+  const eta = new Date();
+  eta.setMonth(eta.getMonth() + monthsLeft);
+  return `${eta.getFullYear()}-${String(eta.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function nextMilestone(
   netWorth: number,
   series: NetWorthPoint[],
 ): Milestone | null {
   const target = MILESTONES.find((m) => m > netWorth);
   if (!target || netWorth <= 0) return null;
-
-  // Pace = average month-over-month change across up to the last 6 intervals.
-  let monthlyPace: number | null = null;
-  if (series.length >= 2) {
-    const recent = series.slice(-7);
-    const pace =
-      (recent[recent.length - 1].netWorth - recent[0].netWorth) /
-      (recent.length - 1);
-    monthlyPace = pace > 0 ? pace : null;
-  }
-
-  let etaMonth: string | null = null;
-  if (monthlyPace) {
-    const monthsLeft = Math.ceil((target - netWorth) / monthlyPace);
-    const eta = new Date();
-    eta.setMonth(eta.getMonth() + monthsLeft);
-    etaMonth = `${eta.getFullYear()}-${String(eta.getMonth() + 1).padStart(2, "0")}`;
-  }
-
+  const monthlyPace = recentMonthlyPace(series);
   return {
     target,
     progress: Math.max(0, Math.min(1, netWorth / target)),
     monthlyPace,
-    etaMonth,
+    etaMonth: etaMonthFor(target - netWorth, monthlyPace),
   };
 }

@@ -3,8 +3,17 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatCurrency } from "@/lib/config";
 import type { AllocationSlice } from "@/lib/networth";
+import type { AllocationTargets } from "@/lib/types";
 
-export function AllocationDonut({ data }: { data: AllocationSlice[] }) {
+const DRIFT_ALERT_PP = 5;
+
+export function AllocationDonut({
+  data,
+  targets = {},
+}: {
+  data: AllocationSlice[];
+  targets?: AllocationTargets;
+}) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
@@ -38,21 +47,35 @@ export function AllocationDonut({ data }: { data: AllocationSlice[] }) {
         </ResponsiveContainer>
       </div>
       <ul className="grid w-full gap-2">
-        {data.map((slice) => (
-          <li key={slice.bucket} className="flex items-center justify-between gap-3 text-sm">
-            <span className="flex items-center gap-2">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: slice.color }}
-              />
-              {slice.bucket}
-            </span>
-            <span className="text-muted-foreground" data-amount>
-              {formatCurrency(slice.value)} ·{" "}
-              {total > 0 ? ((slice.value / total) * 100).toFixed(0) : 0}%
-            </span>
-          </li>
-        ))}
+        {data.map((slice) => {
+          const actualPct = total > 0 ? (slice.value / total) * 100 : 0;
+          const targetPct = targets[slice.bucket];
+          const drift = targetPct != null ? actualPct - targetPct : null;
+          const drifted = drift != null && Math.abs(drift) > DRIFT_ALERT_PP;
+          return (
+            <li key={slice.bucket} className="flex items-center justify-between gap-3 text-sm">
+              <span className="flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: slice.color }}
+                />
+                {slice.bucket}
+              </span>
+              <span className="text-right text-muted-foreground" data-amount>
+                {formatCurrency(slice.value)} · {actualPct.toFixed(0)}%
+                {drift != null && (
+                  <span
+                    className={drifted ? "ml-1 font-medium text-negative" : "ml-1"}
+                    title={`Target ${targetPct}%`}
+                  >
+                    (target {targetPct}% · {drift >= 0 ? "+" : ""}
+                    {drift.toFixed(0)})
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

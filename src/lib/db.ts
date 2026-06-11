@@ -2,7 +2,9 @@ import Dexie, { type EntityTable } from "dexie";
 import type {
   Account,
   Category,
+  Goal,
   Holding,
+  Setting,
   Snapshot,
   Transaction,
 } from "./types";
@@ -18,6 +20,8 @@ export class KoshDB extends Dexie {
   snapshots!: EntityTable<Snapshot, "id">;
   transactions!: EntityTable<Transaction, "id">;
   categories!: EntityTable<Category, "id">;
+  goals!: EntityTable<Goal, "id">;
+  settings!: EntityTable<Setting, "key">;
 
   constructor() {
     super("networth-app");
@@ -27,6 +31,10 @@ export class KoshDB extends Dexie {
       snapshots: "id, accountId, date, [accountId+date]",
       transactions: "id, date, type, categoryId, accountId",
       categories: "id, type",
+    });
+    this.version(2).stores({
+      goals: "id",
+      settings: "key",
     });
   }
 }

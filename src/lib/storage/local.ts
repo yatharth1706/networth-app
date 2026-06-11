@@ -4,6 +4,7 @@ import {
   type Account,
   type Category,
   type ExportData,
+  type Goal,
   type Holding,
   type Snapshot,
   type Transaction,
@@ -135,6 +136,28 @@ export class LocalStorageAdapter implements StorageAdapter {
     await db.categories.delete(id);
   }
 
+  async getGoals(): Promise<Goal[]> {
+    const goals = await db.goals.toArray();
+    return goals.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  async saveGoal(goal: Goal): Promise<void> {
+    await db.goals.put(goal);
+  }
+
+  async deleteGoal(id: string): Promise<void> {
+    await db.goals.delete(id);
+  }
+
+  async getSetting<T>(key: string): Promise<T | undefined> {
+    const row = await db.settings.get(key);
+    return row?.value as T | undefined;
+  }
+
+  async setSetting<T>(key: string, value: T): Promise<void> {
+    await db.settings.put({ key, value });
+  }
+
   async exportData(): Promise<ExportData> {
     return {
       app: APP_NAME,
@@ -145,6 +168,8 @@ export class LocalStorageAdapter implements StorageAdapter {
       snapshots: await db.snapshots.toArray(),
       transactions: await db.transactions.toArray(),
       categories: await db.categories.toArray(),
+      goals: await db.goals.toArray(),
+      settings: await db.settings.toArray(),
     };
   }
 
@@ -156,7 +181,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
     await db.transaction(
       "rw",
-      [db.accounts, db.holdings, db.snapshots, db.transactions, db.categories],
+      [db.accounts, db.holdings, db.snapshots, db.transactions, db.categories, db.goals, db.settings],
       async () => {
         await Promise.all([
           db.accounts.clear(),
@@ -164,12 +189,16 @@ export class LocalStorageAdapter implements StorageAdapter {
           db.snapshots.clear(),
           db.transactions.clear(),
           db.categories.clear(),
+          db.goals.clear(),
+          db.settings.clear(),
         ]);
         await db.accounts.bulkAdd(data.accounts ?? []);
         await db.holdings.bulkAdd(data.holdings ?? []);
         await db.snapshots.bulkAdd(data.snapshots ?? []);
         await db.transactions.bulkAdd(data.transactions ?? []);
         await db.categories.bulkAdd(data.categories ?? []);
+        await db.goals.bulkAdd(data.goals ?? []);
+        await db.settings.bulkAdd(data.settings ?? []);
       },
     );
   }
@@ -177,7 +206,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   async clearAll(): Promise<void> {
     await db.transaction(
       "rw",
-      [db.accounts, db.holdings, db.snapshots, db.transactions, db.categories],
+      [db.accounts, db.holdings, db.snapshots, db.transactions, db.categories, db.goals, db.settings],
       async () => {
         await Promise.all([
           db.accounts.clear(),
@@ -185,6 +214,8 @@ export class LocalStorageAdapter implements StorageAdapter {
           db.snapshots.clear(),
           db.transactions.clear(),
           db.categories.clear(),
+          db.goals.clear(),
+          db.settings.clear(),
         ]);
       },
     );

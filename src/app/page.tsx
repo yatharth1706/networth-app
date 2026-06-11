@@ -22,7 +22,10 @@ import {
 import { formatCurrency } from "@/lib/config";
 import {
   ACCOUNT_TYPE_META,
+  ALLOCATION_TARGETS_KEY,
   type Account,
+  type AllocationTargets,
+  type Goal,
   type Snapshot,
   type Transaction,
 } from "@/lib/types";
@@ -34,6 +37,8 @@ import { NetWorthChart } from "@/components/networth-chart";
 import { AllocationDonut } from "@/components/allocation-donut";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { HoldingsDialog } from "@/components/holdings-dialog";
+import { TargetsDialog } from "@/components/targets-dialog";
+import { GoalsCard } from "@/components/goals-card";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,6 +52,8 @@ export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [targets, setTargets] = useState<AllocationTargets>({});
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
 
@@ -55,6 +62,10 @@ export default function Dashboard() {
     void storage.getAccounts().then(setAccounts);
     void storage.getSnapshots().then(setSnapshots);
     void storage.getTransactions().then(setTransactions);
+    void storage.getGoals().then(setGoals);
+    void storage
+      .getSetting<AllocationTargets>(ALLOCATION_TARGETS_KEY)
+      .then((t) => setTargets(t ?? {}));
   }, []);
 
   useEffect(() => {
@@ -207,14 +218,26 @@ export default function Dashboard() {
 
       {allocation.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Asset allocation</CardTitle>
-            <CardDescription>How your assets are split across classes</CardDescription>
+          <CardHeader className="flex-row items-start justify-between space-y-0">
+            <div className="grid gap-1.5">
+              <CardTitle>Asset allocation</CardTitle>
+              <CardDescription>How your assets are split across classes</CardDescription>
+            </div>
+            <TargetsDialog targets={targets} allocation={allocation} onChanged={reload} />
           </CardHeader>
           <CardContent>
-            <AllocationDonut data={allocation} />
+            <AllocationDonut data={allocation} targets={targets} />
           </CardContent>
         </Card>
+      )}
+
+      {(accounts.length > 0 || goals.length > 0) && (
+        <GoalsCard
+          goals={goals}
+          netWorth={netWorth}
+          series={series}
+          onChanged={reload}
+        />
       )}
 
       {accounts.length === 0 && (

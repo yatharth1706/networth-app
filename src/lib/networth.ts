@@ -19,7 +19,7 @@ export function computeNetWorth(accounts: Account[]): NetWorthSummary {
   return { assets, liabilities, netWorth: assets - liabilities };
 }
 
-const ALLOCATION_BUCKETS = [
+export const ALLOCATION_BUCKETS = [
   "Equity",
   "Retirement",
   "Fixed income",

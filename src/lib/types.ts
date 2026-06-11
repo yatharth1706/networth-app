@@ -136,6 +136,26 @@ export interface Category {
   color?: string;
 }
 
+/** A custom savings target, tracked against net worth. */
+export interface Goal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  /** Optional YYYY-MM-DD deadline for on-track/behind verdicts. */
+  targetDate?: string;
+  createdAt: string;
+}
+
+/** Free-form app settings persisted alongside the data (e.g. allocation targets). */
+export interface Setting {
+  key: string;
+  value: unknown;
+}
+
+/** Target percentage per allocation bucket, keyed by bucket name. */
+export type AllocationTargets = Record<string, number>;
+export const ALLOCATION_TARGETS_KEY = "allocationTargets";
+
 /** Shape of the Export/Import JSON backup file. */
 export interface ExportData {
   app: string;
@@ -146,6 +166,9 @@ export interface ExportData {
   snapshots: Snapshot[];
   transactions: Transaction[];
   categories: Category[];
+  /** Added in schema v2; absent from older backups. */
+  goals?: Goal[];
+  settings?: Setting[];
 }
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;

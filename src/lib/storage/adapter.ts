@@ -2,6 +2,7 @@ import type {
   Account,
   Category,
   ExportData,
+  Goal,
   Holding,
   Snapshot,
   Transaction,
@@ -47,6 +48,15 @@ export interface StorageAdapter {
   getCategories(): Promise<Category[]>;
   saveCategory(category: Category): Promise<void>;
   deleteCategory(id: string): Promise<void>;
+
+  // Goals
+  getGoals(): Promise<Goal[]>;
+  saveGoal(goal: Goal): Promise<void>;
+  deleteGoal(id: string): Promise<void>;
+
+  // Settings (small key-value blobs, e.g. allocation targets)
+  getSetting<T>(key: string): Promise<T | undefined>;
+  setSetting<T>(key: string, value: T): Promise<void>;
 
   // Backup
   exportData(): Promise<ExportData>;
