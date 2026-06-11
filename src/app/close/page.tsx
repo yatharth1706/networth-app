@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { getStorage } from "@/lib/storage";
+import { effectiveValue, isProjected } from "@/lib/accrual";
 import { formatCurrency } from "@/lib/config";
 import { ACCOUNT_TYPE_META, type Account } from "@/lib/types";
 import { todayISO, uid } from "@/lib/utils";
@@ -30,8 +31,10 @@ export default function MonthlyClose() {
     const storage = getStorage();
     void storage.getAccounts().then((list) => {
       setAccounts(list);
+      // Rule-based accounts prefill with their projected value so the close
+      // is one click unless reality differs.
       setValues(
-        Object.fromEntries(list.map((a) => [a.id, String(a.currentValue)])),
+        Object.fromEntries(list.map((a) => [a.id, String(effectiveValue(a))])),
       );
     });
     void storage.getSnapshots().then((snaps) => {
@@ -147,6 +150,7 @@ export default function MonthlyClose() {
                   <span className="block text-xs text-muted-foreground">
                     {ACCOUNT_TYPE_META[account.type].label}
                     {account.kind === "liability" && " (outstanding)"}
+                    {isProjected(account) && " · prefilled from auto-growth rules"}
                   </span>
                 </span>
                 <span

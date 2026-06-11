@@ -54,6 +54,20 @@ export const ACCOUNT_TYPE_META: Record<
   other_liability: { label: "Other Liability", kind: "liability" },
 };
 
+/**
+ * Optional auto-growth rules for accounts whose value follows a schedule
+ * (PPF, EPF, NPS, FD, RD…). The app projects the value forward from the last
+ * manual update instead of waiting for the user to type it in each month.
+ */
+export interface AccountRules {
+  /** Annual interest rate in percent, e.g. 7.1 for PPF. */
+  annualRatePct: number;
+  /** Fixed deposit added on a schedule (SIP/EPF contribution/RD installment). */
+  contributionAmount?: number;
+  /** Months between contributions: 1 = monthly, 3 = quarterly, 12 = yearly. */
+  contributionEveryMonths?: 1 | 3 | 12;
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -62,6 +76,11 @@ export interface Account {
   kind: AccountKind;
   /** Latest known value in INR. Liabilities store the outstanding amount as a positive number. */
   currentValue: number;
+  /**
+   * When set, the displayed value is projected forward from currentValue as of
+   * updatedAt using these rules. Editing the value resets the baseline.
+   */
+  rules?: AccountRules;
   institution?: string;
   notes?: string;
   createdAt: string;

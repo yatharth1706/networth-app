@@ -1,3 +1,4 @@
+import { effectiveValue } from "./accrual";
 import type { Account, AccountType, Snapshot } from "./types";
 
 export interface NetWorthSummary {
@@ -11,8 +12,9 @@ export function computeNetWorth(accounts: Account[]): NetWorthSummary {
   let liabilities = 0;
   for (const account of accounts) {
     if (account.archivedAt) continue;
-    if (account.kind === "asset") assets += account.currentValue;
-    else liabilities += account.currentValue;
+    const value = effectiveValue(account);
+    if (account.kind === "asset") assets += value;
+    else liabilities += value;
   }
   return { assets, liabilities, netWorth: assets - liabilities };
 }
@@ -68,7 +70,7 @@ export function assetAllocation(accounts: Account[]): AllocationSlice[] {
   for (const account of accounts) {
     if (account.kind !== "asset" || account.archivedAt) continue;
     const bucket = BUCKET_BY_TYPE[account.type] ?? "Other";
-    totals.set(bucket, (totals.get(bucket) ?? 0) + account.currentValue);
+    totals.set(bucket, (totals.get(bucket) ?? 0) + effectiveValue(account));
   }
   return ALLOCATION_BUCKETS.filter((b) => (totals.get(b) ?? 0) > 0).map(
     (bucket) => ({

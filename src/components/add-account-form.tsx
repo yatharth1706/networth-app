@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import {
+  RULE_TYPES,
+  RulesFields,
+  draftFromRules,
+  rulesFromDraft,
+  type RulesDraft,
+} from "@/components/rules-fields";
 
 const assetTypes = Object.entries(ACCOUNT_TYPE_META).filter(
   ([, meta]) => meta.kind === "asset",
@@ -20,6 +27,7 @@ export function AddAccountForm({ onAdded }: { onAdded: () => void }) {
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("savings");
   const [value, setValue] = useState("");
+  const [rules, setRules] = useState<RulesDraft>(draftFromRules());
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -36,6 +44,7 @@ export function AddAccountForm({ onAdded }: { onAdded: () => void }) {
         type,
         kind: ACCOUNT_TYPE_META[type].kind,
         currentValue: amount,
+        rules: RULE_TYPES.includes(type) ? rulesFromDraft(rules) : undefined,
         createdAt: now,
         updatedAt: now,
       };
@@ -47,6 +56,7 @@ export function AddAccountForm({ onAdded }: { onAdded: () => void }) {
       ]);
       setName("");
       setValue("");
+      setRules(draftFromRules());
       onAdded();
     } finally {
       setSaving(false);
@@ -54,7 +64,8 @@ export function AddAccountForm({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
       <div className="grid gap-1.5">
         <Label htmlFor="account-name">Name</Label>
         <Input
@@ -104,6 +115,16 @@ export function AddAccountForm({ onAdded }: { onAdded: () => void }) {
       <Button type="submit" disabled={saving}>
         {saving ? "Adding…" : "Add account"}
       </Button>
+      </div>
+
+      {RULE_TYPES.includes(type) && (
+        <RulesFields
+          type={type}
+          draft={rules}
+          onChange={setRules}
+          idPrefix="add"
+        />
+      )}
     </form>
   );
 }

@@ -19,6 +19,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  RULE_TYPES,
+  RulesFields,
+  draftFromRules,
+  rulesFromDraft,
+  type RulesDraft,
+} from "@/components/rules-fields";
 
 const assetTypes = Object.entries(ACCOUNT_TYPE_META).filter(
   ([, meta]) => meta.kind === "asset",
@@ -38,13 +45,19 @@ export function EditAccountDialog({
   const [name, setName] = useState(account.name);
   const [type, setType] = useState<AccountType>(account.type);
   const [value, setValue] = useState(String(account.currentValue));
+  const [rules, setRules] = useState<RulesDraft>(draftFromRules(account.rules));
   const [busy, setBusy] = useState(false);
 
   function reset() {
     setName(account.name);
     setType(account.type);
     setValue(String(account.currentValue));
+    setRules(draftFromRules(account.rules));
   }
+
+  const showRules =
+    ACCOUNT_TYPE_META[type].kind === "asset" &&
+    (RULE_TYPES.includes(type) || account.rules != null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +71,7 @@ export function EditAccountDialog({
         type,
         kind: ACCOUNT_TYPE_META[type].kind,
         currentValue: amount,
+        rules: showRules ? rulesFromDraft(rules) : undefined,
         updatedAt: new Date().toISOString(),
       });
       setOpen(false);
@@ -158,6 +172,14 @@ export function EditAccountDialog({
               required
             />
           </div>
+          {showRules && (
+            <RulesFields
+              type={type}
+              draft={rules}
+              onChange={setRules}
+              idPrefix="edit"
+            />
+          )}
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Button type="submit" disabled={busy}>
               {busy ? "Saving…" : "Save"}

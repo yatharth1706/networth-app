@@ -44,11 +44,12 @@ Key design decisions:
 
 ## Roadmap
 
-- **Phase 1 — Foundation (in progress):** accounts, net worth dashboard,
-  monthly snapshots, expense tracking, export/import JSON, privacy mode.
-- **Phase 2 — Smart accounts & automation:** rule-based PPF/FD/RD/EPF accrual,
-  CAS PDF import (parsed client-side), live AMFI NAVs / stock prices, bank
-  statement CSV import, loan amortization.
+- **Phase 1 — Foundation (done):** accounts, net worth dashboard with
+  allocation donut, monthly snapshots + over-time chart, expense tracking,
+  export/import JSON, privacy mode.
+- **Phase 2 — Smart accounts & automation (in progress):** rule-based
+  PPF/FD/RD/EPF accrual (done), CAS PDF import (parsed client-side), live
+  AMFI NAVs / stock prices, bank statement CSV import, loan amortization.
 - **Phase 3 — Insights:** net worth delta decomposition (saved vs market
   movement), XIRR, allocation targets + drift alerts, goals, milestones.
 - **Phase 4 — Cloud tier (later):** auth + sync via a `CloudAdapter`,

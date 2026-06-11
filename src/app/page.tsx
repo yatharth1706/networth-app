@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { getStorage } from "@/lib/storage";
+import { effectiveValue, isProjected } from "@/lib/accrual";
 import {
   assetAllocation,
   computeNetWorth,
@@ -241,8 +242,19 @@ function AccountList({
                   </span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="text-sm font-medium" data-amount>
-                    {formatCurrency(account.currentValue)}
+                  <span
+                    className="text-sm font-medium"
+                    data-amount
+                    title={
+                      isProjected(account)
+                        ? "Projected from this account's auto-growth rules"
+                        : undefined
+                    }
+                  >
+                    {isProjected(account) && (
+                      <span className="text-muted-foreground">≈ </span>
+                    )}
+                    {formatCurrency(effectiveValue(account))}
                   </span>
                   <EditAccountDialog account={account} onChanged={onChanged} />
                 </span>
